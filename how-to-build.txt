@@ -1,0 +1,5 @@
+apt update
+apt upgrade
+apt install gdal-bin libgdal-dev
+pip install GDAL==$(gdal-config --version) --global-option=build_ext --global-option="-I/usr/include/gdal"
+pip install -e .

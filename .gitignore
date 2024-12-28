@@ -18,3 +18,6 @@
 /ignore
 /data/emit_asset_urls.txt
 /.vscode/
+
+# data
+/data/
