@@ -1,19 +1,12 @@
 import argparse
 from dotenv import load_dotenv
 import earthaccess
-import os
 import earthaccess
-from osgeo import gdal
 import rasterio
 from rasterio.warp import calculate_default_transform, reproject, Resampling
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 import numpy as np
-import xarray as xr
-import hvplot.xarray
-import holoviews as hv
 import sys
-
+from pathlib import Path
 sys.path.append("../modules/")
 from emit_tools import emit_xarray
 
@@ -23,15 +16,16 @@ def main():
     parser.add_argument(
         "--l2a",
         type=str,
-        default="../../data/registration_test/EMIT_L2A_RFL_001_20241020T170504_2429411_003.nc",
+        default="data/registration_test/EMIT_L2A_RFL_001_20241020T170504_2429411_003.nc",
         help="L2A data path",
     )
     parser.add_argument(
         "--l2b",
         type=str,
-        default="../../data/registration_test/EMIT_L2B_CH4ENH_001_20241020T170504_2429411_003.tif",
+        default="data/registration_test/EMIT_L2B_CH4ENH_001_20241020T170504_2429411_003.tif",
         help="L2B data path",
     )
+    parser.add_argument("--dst", type=str, help="Output path")
     args = parser.parse_args()
 
     l2a_path, l2b_path = args.l2a, args.l2b
@@ -86,8 +80,16 @@ def main():
     )
 
     # 再投影されたL2AデータとL2Bデータを保存
-    np.save('../../data/registration_test/l2a.npy', l2a_cropped.data)
-    np.save('../../data/registration_test/l2b.npy', l2b_ortho)
+    outdir = Path(args.dst)
+    l2a_filename = Path(args.l2a).name
+    l2a_name = l2a_filename.split('_', 1)[0] + '_' + l2a_filename.split('_', 1)[1]
+    l2a_dst = outdir / l2a_name/ '.npy'
+    l2b_filename = Path(args.l2b).name
+    l2b_name = l2b_filename.split('_', 1)[0] + '_' + l2b_filename.split('_', 1)[1]
+    l2b_dst = outdir / l2b_name / '.npy'
+
+    np.save(l2a_dst, l2a_cropped.data)
+    np.save(l2b_dst, l2b_ortho)
 
 if __name__ == "__main__":
     main()
