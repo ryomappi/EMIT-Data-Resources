@@ -1,20 +1,34 @@
-# ベースイメージとして公式のPythonイメージを使用
 FROM python:3.10-slim
 
-# 必要なツールをインストール
+# 必要なツールを一括でインストール
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+      build-essential \
+      gdal-bin \
+      libgdal-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-# Jupyter Labをインストール
-RUN pip install --no-cache-dir jupyterlab
+# GDAL のヘッダーのパスを設定
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
+
+# 必要なPythonパッケージをインストール
+RUN pip install --no-cache-dir \
+    jupyterlab \
+    earthaccess \
+    pandas \
+    geopandas \
+    xarray \
+    netCDF4 \
+    spectral \
+    GDAL==3.6.2 \
+    scikit-image \
+    rasterio \
+    rioxarray \
+    imagecodecs
 
 # コンテナの作業ディレクトリを設定
 WORKDIR /workspace
 
-# Jupyter Labを起動するエントリーポイント
+# Jupyter Lab を起動するエントリーポイント
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
-
-# docker build -t jupyterlab-image .
-# docker run -p 8888:8888 -v $(pwd):/workspace jupyterlab-image
