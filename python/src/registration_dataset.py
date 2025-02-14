@@ -18,48 +18,61 @@ def ortho_file_pair(geojson_id, l2a_file, l2b_file, l2a_outdir, l2b_outdir):
     l2b_dst = l2b_outdir / f"{geojson_id}.npy"
 
     if l2a_dst.exists() and l2b_dst.exists():
-        print(f"ファイル {l2a_dst} および {l2b_dst} は既に存在しています。スキップします。")
+        print(
+            f"ファイル {l2a_dst} および {l2b_dst} は既に存在しています。スキップします。"
+        )
         return
 
     print(f"\nProcessing file pair:\n  L2A: {l2a_file}\n  L2B: {l2b_file}")
 
-    # L2Aデータのオルソ処理
-    l2a_geo = emit_xarray(str(l2a_file), ortho=True)
-    l2a_geo.reflectance.data[l2a_geo.reflectance.data == -9999] = 0  # 欠損値を0に
+    try:
+        # L2Aデータのオルソ処理
+        l2a_geo = emit_xarray(str(l2a_file), ortho=True)
+        l2a_geo.reflectance.data[l2a_geo.reflectance.data == -9999] = 0  # 欠損値を0に
 
-    # L2Bデータのオルソ処理
-    with rasterio.open(str(l2b_file)) as src:
-        # オルソ補正パラメータの計算
-        transform, width, height = calculate_default_transform(
-            src.crs, src.crs, src.width, src.height, *src.bounds
-        )
-        # 出力用配列の作成
-        l2b_ortho = np.empty((src.count, height, width), dtype=src.dtypes[0])
-        for i in range(1, src.count + 1):
-            reproject(
-                source=rasterio.band(src, i),
-                destination=l2b_ortho[i - 1],
-                src_transform=src.transform,
-                src_crs=src.crs,
-                dst_transform=transform,
-                dst_crs=src.crs,
-                resampling=Resampling.nearest,
+        # L2Bデータのオルソ処理
+        with rasterio.open(str(l2b_file)) as src:
+            # オルソ補正パラメータの計算
+            transform, width, height = calculate_default_transform(
+                src.crs, src.crs, src.width, src.height, *src.bounds
             )
-        l2b_ortho = l2b_ortho.squeeze()
-        # L2Bのバウンディングボックスを取得
-        bbox = src.bounds
-        print(f"bbox: {bbox}")
+            # 出力用配列の作成
+            l2b_ortho = np.empty((src.count, height, width), dtype=src.dtypes[0])
+            for i in range(1, src.count + 1):
+                reproject(
+                    source=rasterio.band(src, i),
+                    destination=l2b_ortho[i - 1],
+                    src_transform=src.transform,
+                    src_crs=src.crs,
+                    dst_transform=transform,
+                    dst_crs=src.crs,
+                    resampling=Resampling.nearest,
+                )
+            l2b_ortho = l2b_ortho.squeeze()
+            # L2Bのバウンディングボックスを取得
+            bbox = src.bounds
+            print(f"bbox: {bbox}")
 
-    # L2Aデータを L2B のバウンディングボックスでくり抜く
-    l2a_cropped = l2a_geo.reflectance.sel(
-        longitude=slice(bbox.left, bbox.right),
-        latitude=slice(bbox.top, bbox.bottom),
-    )
+        # L2Aデータを L2B のバウンディングボックスでくり抜く
+        l2a_cropped = l2a_geo.reflectance.sel(
+            longitude=slice(bbox.left, bbox.right),
+            latitude=slice(bbox.top, bbox.bottom),
+        )
 
-    # データを保存
-    np.save(l2a_dst, l2a_cropped.data)
-    np.save(l2b_dst, l2b_ortho)
-    print(f"保存完了: \n  L2A -> {l2a_dst}\n  L2B -> {l2b_dst}")
+        # データを保存
+        np.save(l2a_dst, l2a_cropped.data)
+        np.save(l2b_dst, l2b_ortho)
+        print(f"保存完了: \n  L2A -> {l2a_dst}\n  L2B -> {l2b_dst}")
+    except Exception as e:
+        print(
+            f"{geojson_id} の処理でエラーが発生しました。エラー内容: {e}. このペアはスキップします。"
+        )
+        # 途中で生成されたファイルがあれば削除
+        if l2a_dst.exists():
+            l2a_dst.unlink()
+        if l2b_dst.exists():
+            l2b_dst.unlink()
+        return
 
 
 def main():
