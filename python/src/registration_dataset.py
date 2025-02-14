@@ -13,6 +13,14 @@ MAX_WORKERS = 20
 
 
 def ortho_file_pair(geojson_id, l2a_file, l2b_file, l2a_outdir, l2b_outdir):
+    # 出力ファイル名を生成
+    l2a_dst = l2a_outdir / f"{geojson_id}.npy"
+    l2b_dst = l2b_outdir / f"{geojson_id}.npy"
+
+    if l2a_dst.exists() and l2b_dst.exists():
+        print(f"ファイル {l2a_dst} および {l2b_dst} は既に存在しています。スキップします。")
+        return
+
     print(f"\nProcessing file pair:\n  L2A: {l2a_file}\n  L2B: {l2b_file}")
 
     # L2Aデータのオルソ処理
@@ -47,10 +55,6 @@ def ortho_file_pair(geojson_id, l2a_file, l2b_file, l2a_outdir, l2b_outdir):
         longitude=slice(bbox.left, bbox.right),
         latitude=slice(bbox.top, bbox.bottom),
     )
-
-    # 出力ファイル名を生成
-    l2a_dst = l2a_outdir / f"{geojson_id}.npy"
-    l2b_dst = l2b_outdir / f"{geojson_id}.npy"
 
     # データを保存
     np.save(l2a_dst, l2a_cropped.data)
