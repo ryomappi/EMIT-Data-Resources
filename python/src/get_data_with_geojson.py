@@ -9,7 +9,7 @@ import concurrent.futures
 import re
 
 MAX_WORKERS = 8
-DOWNLOAD_TIMEOUT = 600
+DOWNLOAD_TIMEOUT = 1200
 
 
 def download_from_url(geojson_id, urls, output_path):
@@ -32,6 +32,7 @@ def download_from_url(geojson_id, urls, output_path):
                                 f"Download of {url} timed out after {DOWNLOAD_TIMEOUT} seconds."
                             )
                         dst.write(chunk)
+                    print(f"Download of {url} completed.")
         except Exception as e:
             print(f"{geojson_id}: Error downloading {url}: {e}. Skipping this file.")
             if fp.exists():
