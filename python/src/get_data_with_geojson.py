@@ -8,18 +8,19 @@ from pathlib import Path
 import concurrent.futures
 import re
 
-MAX_WORKERS = 4
+MAX_WORKERS = 8
 DOWNLOAD_TIMEOUT = 600
 
 
 def download_from_url(geojson_id, urls, output_path):
     fs = earthaccess.get_requests_https_session()
+
+    if any(output_path.glob(f"{geojson_id}_*")):
+        print(f"File for {geojson_id} already exists, skipping download.")
+        return
     for url in urls:
         granule_asset_id = url.split("/")[-1]
         fp = output_path / f"{geojson_id}_{granule_asset_id}"
-        if fp.exists():
-            print(f"File {fp} already exists, skipping download.")
-            continue
         try:
             with fs.get(url, stream=True) as src:
                 with fp.open("wb") as dst:

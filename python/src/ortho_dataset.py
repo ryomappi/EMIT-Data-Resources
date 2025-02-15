@@ -19,7 +19,7 @@ def ortho_file_pair(geojson_id, l2a_file, l2b_file, l2a_outdir, l2b_outdir):
 
     if l2a_dst.exists() and l2b_dst.exists():
         print(
-            f"ファイル {l2a_dst} および {l2b_dst} は既に存在しています。スキップします。"
+            f"\nファイル {l2a_dst} および {l2b_dst} は既に存在しています。スキップします。"
         )
         return
 
@@ -157,7 +157,7 @@ def main():
         # 全タスクの完了を待機
         for future in concurrent.futures.as_completed(futures):
             future.result()
-
+    print("\n全ての処理が完了しました。")
 
 if __name__ == "__main__":
     main()
