@@ -106,7 +106,7 @@ def main():
                         valid_granule = granule
                         break
                 if valid_granule:
-                    valid_links = [link for link in valid_granule.data_links() if "EMIT_L2A_RFL_" in link]
+                    valid_links = [link for link in valid_granule.data_links() if "EMIT_L2A_RFLUNCERT" not in link and "EMIT_L2A_MASK" not in link]
                     if valid_links:
                         l2a_url = valid_links[0]
                         futures.append(
