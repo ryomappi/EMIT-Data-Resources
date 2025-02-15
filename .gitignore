@@ -24,3 +24,5 @@
 
 # .env
 .env
+
+nohup_logs/

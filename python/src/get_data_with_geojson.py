@@ -1,3 +1,4 @@
+import time
 import earthaccess
 import pandas as pd
 import geopandas as gpd
@@ -13,7 +14,8 @@ import re
 sys.path.append("python/modules/")
 from emit_tools import emit_xarray
 
-MAX_WORKERS = 20
+MAX_WORKERS = 4
+DOWNLOAD_TIMEOUT = 600
 
 
 def download_from_url(geojson_id, urls, output_path):
@@ -28,7 +30,10 @@ def download_from_url(geojson_id, urls, output_path):
             with fs.get(url, stream=True) as src:
                 with fp.open("wb") as dst:
                     print(f"Downloading {url} to {fp}...")
+                    download_start = time.time()
                     for chunk in src.iter_content(chunk_size=64 * 1024 * 1024):
+                        if time.time() - download_start > DOWNLOAD_TIMEOUT:
+                            raise TimeoutError(f"Download of {url} timed out after {DOWNLOAD_TIMEOUT} seconds.")
                         dst.write(chunk)
         except Exception as e:
             print(f"{geojson_id}: Error downloading {url}: {e}. Skipping this file.")

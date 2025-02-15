@@ -4,7 +4,7 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--l2b", type=str, help="L2BCH4EMH numpy data path")
+    parser.add_argument("--l2b", type=str, help="L2BCH4PLM numpy data path")
     args = parser.parse_args()
 
     l2b_path = args.l2b

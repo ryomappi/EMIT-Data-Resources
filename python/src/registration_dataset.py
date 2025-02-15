@@ -9,7 +9,7 @@ import concurrent.futures
 sys.path.append("python/modules/")
 from emit_tools import emit_xarray
 
-MAX_WORKERS = 20
+MAX_WORKERS = 4
 
 
 def ortho_file_pair(geojson_id, l2a_file, l2b_file, l2a_outdir, l2b_outdir):
@@ -84,20 +84,19 @@ def main():
     parser.add_argument(
         "--l2a_dir",
         type=str,
-        default="data/dataset/geojsons/l2a",
+        default="data/dataset/l2a",
         help="L2A data directory (e.g. containing .nc files)",
     )
     parser.add_argument(
         "--l2b_dir",
         type=str,
-        default="data/dataset/geojsons/l2b",
+        default="data/dataset/l2b",
         help="L2B data directory (e.g. containing .tif files)",
     )
     parser.add_argument(
         "--dataset",
         "-d",
         type=str,
-        required=True,
         default="data/dataset",
         help="Output directory",
     )
@@ -129,11 +128,11 @@ def main():
             file_pairs[geojson_id] = (l2a_file, l2b_file)
 
     # 有効なペアのみを抽出
-    valid_pairs = [
-        (geojson_id, (l2a_file, l2b_file))
+    valid_pairs = {
+        geojson_id: (l2a_file, l2b_file)
         for geojson_id, (l2a_file, l2b_file) in file_pairs.items()
         if l2a_file is not None and l2b_file is not None
-    ]
+    }
 
     if not valid_pairs:
         print("有効なファイルペアが見つかりませんでした")
