@@ -9,7 +9,7 @@ import concurrent.futures
 sys.path.append("python/modules/")
 from emit_tools import emit_xarray
 
-MAX_WORKERS = 4
+MAX_WORKERS = 8
 
 
 def ortho_file_pair(geojson_id, l2a_file, l2b_file, l2a_outdir, l2b_outdir):

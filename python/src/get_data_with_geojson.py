@@ -80,7 +80,7 @@ def main():
 
             # 検索パラメータの設定
             start_date = "2023-10-01"
-            end_date = "2024-10-31"
+            end_date = "2024-09-30"
 
             # L2A, L2Bデータの検索
             l2a_results = earthaccess.search_data(
@@ -94,52 +94,69 @@ def main():
                 temporal=(start_date, end_date),
             )
 
-            # 最初のgranuleの最初のURLのみをダウンロードするように変更
-            if l2a_results and len(l2a_results) > 0:
-                valid_granule = None
+            # L2AとL2Bで同じタイムスタンプを持つペアが存在するか確認する
+            l2a_url = None
+            l2a_timestamp = None
+            valid_granule_b = None
+
+            if l2a_results and l2b_results:
+                found_pair = False
                 for granule in l2a_results:
                     links = granule.data_links()
-                    if links and any("EMIT_L2A_RFL_" in link for link in links):
-                        valid_granule = granule
-                        break
-                if valid_granule:
+                    # 「EMIT_L2A_RFL_」を含み、不要な文字列が含まれていないリンクを抽出
                     valid_links = [
-                        link
-                        for link in valid_granule.data_links()
-                        if "EMIT_L2A_RFLUNCERT" not in link
+                        link for link in links
+                        if "EMIT_L2A_RFL_" in link
+                        and "EMIT_L2A_RFLUNCERT" not in link
                         and "EMIT_L2A_MASK" not in link
                     ]
                     if valid_links:
-                        l2a_url = valid_links[0]
-                        futures.append(
-                            executor.submit(
-                                download_from_url,
-                                geojson_id,
-                                [l2a_url],
-                                output_path_l2a,
-                            )
-                        )
-                    else:
-                        print("有効なL2A URLが見つかりませんでした。")
-                else:
-                    print("有効なL2Aデータが見つかりませんでした。")
-            else:
-                print("No L2A data found.")
+                        candidate_url = valid_links[0]
+                        m = re.search(r'_(\d{8}T\d{6})_', candidate_url)
+                        if m:
+                            candidate_ts = m.group(1)
+                            # L2Bの中からタイムスタンプが同じgranuleを探す
+                            for granule_b in l2b_results:
+                                for link_b in granule_b.data_links():
+                                    m2 = re.search(r'_(\d{8}T\d{6})_', link_b)
+                                    if m2 and m2.group(1) == candidate_ts:
+                                        l2a_url = candidate_url
+                                        l2a_timestamp = candidate_ts
+                                        valid_granule_b = granule_b
+                                        found_pair = True
+                                        break
+                                if found_pair:
+                                    break
+                    if found_pair:
+                        break
 
-            if l2b_results and len(l2b_results) > 0:
-                granule = l2b_results[0]
-                links = granule.data_links()
-                if links and len(links) > 0:
-                    l2b_url = links[0]
-                    futures.append(
-                        executor.submit(
-                            download_from_url, geojson_id, [l2b_url], output_path_l2b
-                        )
-                    )
-                else:
-                    print("No URL found for L2B data in the first granule.")
+                if not found_pair:
+                    print(f"{geojson_id}: L2AとL2Bで同じタイムスタンプのペアが見つかりませんでした。")
+                    continue  # 次のgeojsonへ
             else:
-                print("No L2B data found.")
+                print("L2AもしくはL2Bのデータが見つかりませんでした。")
+                continue
+
+            # ペアが存在する場合、L2A, L2Bのダウンロードを実行
+            print(f"L2A timestamp: {l2a_timestamp}")
+            futures.append(
+                executor.submit(
+                    download_from_url, geojson_id, [l2a_url], output_path_l2a
+                )
+            )
+
+            # L2B: valid_granule_b から先頭の有効なリンクを利用
+            links_b = valid_granule_b.data_links()
+            if links_b and len(links_b) > 0:
+                # 必要に応じてL2B用にフィルタ条件を追加してください
+                l2b_url = links_b[0]
+                futures.append(
+                    executor.submit(
+                        download_from_url, geojson_id, [l2b_url], output_path_l2b
+                    )
+                )
+            else:
+                print("有効なL2B URLが見つかりませんでした。")
 
     concurrent.futures.wait(futures)
     print("All downloads completed.")
