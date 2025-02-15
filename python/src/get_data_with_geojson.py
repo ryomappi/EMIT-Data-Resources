@@ -1,18 +1,12 @@
 import time
 import earthaccess
-import pandas as pd
 import geopandas as gpd
-import matplotlib.pyplot as plt
-import xarray as xr
 import sys
 from dotenv import load_dotenv
 import argparse
 from pathlib import Path
 import concurrent.futures
 import re
-
-sys.path.append("python/modules/")
-from emit_tools import emit_xarray
 
 MAX_WORKERS = 4
 DOWNLOAD_TIMEOUT = 600
@@ -33,7 +27,9 @@ def download_from_url(geojson_id, urls, output_path):
                     download_start = time.time()
                     for chunk in src.iter_content(chunk_size=64 * 1024 * 1024):
                         if time.time() - download_start > DOWNLOAD_TIMEOUT:
-                            raise TimeoutError(f"Download of {url} timed out after {DOWNLOAD_TIMEOUT} seconds.")
+                            raise TimeoutError(
+                                f"Download of {url} timed out after {DOWNLOAD_TIMEOUT} seconds."
+                            )
                         dst.write(chunk)
         except Exception as e:
             print(f"{geojson_id}: Error downloading {url}: {e}. Skipping this file.")
@@ -106,12 +102,20 @@ def main():
                         valid_granule = granule
                         break
                 if valid_granule:
-                    valid_links = [link for link in valid_granule.data_links() if "EMIT_L2A_RFLUNCERT" not in link and "EMIT_L2A_MASK" not in link]
+                    valid_links = [
+                        link
+                        for link in valid_granule.data_links()
+                        if "EMIT_L2A_RFLUNCERT" not in link
+                        and "EMIT_L2A_MASK" not in link
+                    ]
                     if valid_links:
                         l2a_url = valid_links[0]
                         futures.append(
                             executor.submit(
-                                download_from_url, geojson_id, [l2a_url], output_path_l2a
+                                download_from_url,
+                                geojson_id,
+                                [l2a_url],
+                                output_path_l2a,
                             )
                         )
                     else:
